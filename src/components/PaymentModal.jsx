@@ -2,11 +2,13 @@
 import React, { useState } from 'react';
 import { FiX, FiLoader, FiCheckCircle, FiAlertCircle, FiExternalLink } from 'react-icons/fi';
 import { useWeb3 } from '../contexts/Web3Context';
+import { useTransactions } from '../contexts/TransactionContext';
 import { ethers } from 'ethers';
 import { convertUsdToEth, getReceiverAddress, getBackendUrl } from '../utils/pricing';
 
 const PaymentModal = ({ cartItems, totalPrice, onClose, onSuccess }) => {
   const { signer, account, chainId } = useWeb3();
+  const { addTransaction } = useTransactions();
   const [isProcessing, setIsProcessing] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
@@ -56,27 +58,39 @@ const PaymentModal = ({ cartItems, totalPrice, onClose, onSuccess }) => {
       });
 
       setTxHash(tx.hash);
-      // Wait for transaction confirmation then record to backend
+      // Wait for transaction confirmation
       const receipt = await tx.wait();
 
-      // Record purchase
+      // Lưu transaction vào localStorage qua TransactionContext
+      const transactionData = {
+        customer: account,
+        medicine: cartItems.map(i => ({ 
+          id: i.id, 
+          name: i.name, 
+          qty: i.quantity, 
+          price_usd: i.price 
+        })),
+        price_eth: amountEth.toFixed(6),
+        price_usd: totalPrice.toFixed(2),
+        tx_hash: tx.hash,
+        chain_id: chainId,
+        block_number: receipt?.blockNumber?.toString() || null,
+        receiver: receiver,
+        status: 'completed',
+      };
+      
+      addTransaction(transactionData);
+
+      // Thử lưu vào backend nếu có (optional)
       try {
         const backend = getBackendUrl();
-        const payload = {
-          customer: account,
-          medicine: cartItems.map(i => ({ id: i.id, name: i.name, qty: i.quantity, price_usd: i.price })),
-          price_eth: amountEth,
-          tx_hash: tx.hash,
-          chain_id: chainId,
-          block_number: receipt?.blockNumber ?? null,
-        };
         await fetch(`${backend}/api/purchase`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(transactionData),
         });
       } catch (recErr) {
-        console.warn('Failed to record purchase:', recErr);
+        console.warn('Failed to record purchase to backend (using local storage):', recErr);
       }
 
       setStep('success');

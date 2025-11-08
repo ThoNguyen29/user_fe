@@ -1,5 +1,5 @@
 // src/App.jsx - Blockchain Integrated Version
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Banner from "./components/Banner";
 import ProductSection from "./components/ProductSection";
@@ -7,178 +7,114 @@ import Cart from "./components/Cart";
 import { Web3Provider } from "./contexts/Web3Context";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { TransactionProvider } from "./contexts/TransactionContext";
 import { getBackendUrl } from "./utils/pricing";
-import { fuzzySearch } from "./utils/search";
-
-// Dữ liệu mẫu cho Frontend-Only Version
-const fluProducts = [
-  {
-    id: 1,
-    name: "Dextromethorphan 10mg",
-    price: 12.9,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.5,
-    description: "Effective cough suppressant for dry cough relief",
-  },
-  {
-    id: 2,
-    name: "Coldacmin",
-    price: 8.98,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.2,
-    description: "Multi-symptom cold relief medication",
-  },
-  {
-    id: 3,
-    name: "Decolgen",
-    price: 3.32,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.0,
-    description: "Fast-acting decongestant for nasal congestion",
-  },
-  {
-    id: 4,
-    name: "Paracetamol 500mg",
-    price: 24.78,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.8,
-    description: "Pain relief and fever reducer",
-  },
-];
-
-const coughProducts = [
-  {
-    id: 5,
-    name: "Cidetuss",
-    price: 2.0,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.1,
-    description: "Natural cough syrup with honey",
-  },
-  {
-    id: 6,
-    name: "Methorphan",
-    price: 1.99,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 3.9,
-    description: "Cough suppressant for persistent cough",
-  },
-  {
-    id: 7,
-    name: "Bisolvon",
-    price: 0.89,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.3,
-    description: "Expectorant for productive cough",
-  },
-  {
-    id: 8,
-    name: "Clorpheniramin",
-    price: 4.0,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.0,
-    description: "Antihistamine for allergy relief",
-  },
-];
-
-const vitaminProducts = [
-  {
-    id: 9,
-    name: "Vitamin C 1000mg",
-    price: 15.5,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.6,
-    description: "Immune system support and antioxidant",
-  },
-  {
-    id: 10,
-    name: "Vitamin D3",
-    price: 18.75,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.4,
-    description: "Bone health and immune function",
-  },
-  {
-    id: 11,
-    name: "Multivitamin Complex",
-    price: 22.99,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.7,
-    description: "Complete daily vitamin supplement",
-  },
-  {
-    id: 12,
-    name: "Omega-3 Fish Oil",
-    price: 28.5,
-    imageUrl: "/api/placeholder/300/200",
-    rating: 4.5,
-    description: "Heart and brain health support",
-  },
-];
+import { formatEther } from "ethers";
 
 function App() {
-  // Combine and de-duplicate products by id
-  const allProducts = React.useMemo(() => {
-    const map = new Map();
-    [...fluProducts, ...coughProducts, ...vitaminProducts].forEach(p => {
-      if (!map.has(p.id)) map.set(p.id, p);
-    });
-    return Array.from(map.values());
+  const [allProducts, setAllProducts] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load drugs from Blockchainadmin backend
+  useEffect(() => {
+    const loadDrugs = async () => {
+      setLoading(true);
+      try {
+        // Lấy backend URL từ Blockchainadmin
+        const blockchainAdminUrl = getBackendUrl(); // Có thể cần config riêng cho Blockchainadmin
+        
+        // Thử lấy từ endpoint /drugs (cần auth) hoặc /api/drugs/search (public)
+        // Dùng /api/drugs/search với query rỗng để lấy tất cả
+        const res = await fetch(`${blockchainAdminUrl}/api/drugs/search?q=&limit=100`);
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.items && Array.isArray(data.items)) {
+            // Map backend drug format to frontend product format
+            const mapped = data.items.map((drug) => ({
+              id: drug.id || Math.random().toString(36).substr(2, 9),
+              name: drug.name || 'Unknown',
+              price: drug.price ? Number(formatEther(drug.price)) : 0,
+    imageUrl: "/api/placeholder/300/200",
+    rating: 4.5,
+              description: drug.batch ? `Batch: ${drug.batch}` : 'No description',
+              batch: drug.batch,
+              owner: drug.owner,
+              stage: drug.stage,
+            }));
+            setAllProducts(mapped);
+            setFiltered(mapped);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading drugs from Blockchainadmin backend:', e);
+      }
+      
+      // Nếu không load được, để danh sách rỗng
+      setAllProducts([]);
+      setFiltered([]);
+      setLoading(false);
+    };
+
+    loadDrugs();
   }, []);
 
-  const [filtered, setFiltered] = React.useState(allProducts);
-
-  React.useEffect(() => {
+  // Search handler - chỉ dùng backend Blockchainadmin
+  useEffect(() => {
     // expose search handler for Navbar
     window.__APP_ON_SEARCH__ = (query) => {
-      const q = (query || '').toLowerCase().trim();
-      if (!q) { setFiltered(allProducts); return; }
+      const q = (query || '').trim();
+      
+      // Nếu query rỗng, hiển thị tất cả
+      if (!q) {
+        setFiltered(allProducts);
+        return;
+      }
 
-      // Try backend search first
+      // Search từ backend Blockchainadmin
       const run = async () => {
         try {
-          const res = await fetch(`${getBackendUrl()}/api/drugs/search?q=${encodeURIComponent(q)}&limit=50`);
+          const blockchainAdminUrl = getBackendUrl();
+          const res = await fetch(`${blockchainAdminUrl}/api/drugs/search?q=${encodeURIComponent(q)}&limit=100`);
+          
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data.items) && data.items.length) {
-              // Map backend drug to frontend product shape; price unknown -> 0
-              const mapped = data.items.map(d => ({
-                id: Number(d.id) || d.id,
-                name: d.name,
-                price: 0,
+            if (data.items && Array.isArray(data.items)) {
+              // Map backend drug format to frontend product format
+              const mapped = data.items.map((drug) => ({
+                id: drug.id || Math.random().toString(36).substr(2, 9),
+                name: drug.name || 'Unknown',
+                price: drug.price ? Number(formatEther(drug.price)) : 0,
                 imageUrl: "/api/placeholder/300/200",
                 rating: 4.5,
-                description: `Batch ${d.batch} • Owner ${d.owner.slice(0,6)}...${d.owner.slice(-4)}`,
+                description: drug.batch ? `Batch: ${drug.batch}` : 'No description',
+                batch: drug.batch,
+                owner: drug.owner,
+                stage: drug.stage,
               }));
               setFiltered(mapped);
               return;
             }
           }
         } catch (e) {
-          // ignore and fallback
-        }
-        // Fallback: client fuzzy search with Fuse.js
-        try {
-          const res = await fuzzySearch(allProducts, q, ['name', 'description']);
-          setFiltered(res);
-        } catch {
-          // Final naive fallback
-          setFiltered(
-            allProducts.filter(p =>
-              p.name.toLowerCase().includes(q) ||
-              (p.description || '').toLowerCase().includes(q)
-            )
-          );
+          console.error('Backend search failed:', e);
+          // Nếu search thất bại, hiển thị danh sách rỗng
+          setFiltered([]);
         }
       };
       run();
     };
+    
     return () => { delete window.__APP_ON_SEARCH__; };
   }, [allProducts]);
 
   return (
     <AuthProvider>
       <Web3Provider>
+        <TransactionProvider>
         <CartProvider>
           <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
             <Navbar />
@@ -186,12 +122,19 @@ function App() {
             <main className="fade-in">
               <Banner />
 
-            {/* All Medicines (deduplicated) */}
+            {/* All Medicines from Blockchainadmin */}
+            {loading ? (
+              <div className="py-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="text-gray-600 mt-4">Đang tải thuốc từ backend...</p>
+              </div>
+            ) : (
             <ProductSection
-              title="All Medicines"
+                title={filtered.length === allProducts.length ? "All Medicines" : `Kết quả tìm kiếm (${filtered.length})`}
               products={filtered}
-              description="Browse our complete catalog"
+                description={filtered.length === allProducts.length ? "Danh sách thuốc từ Blockchainadmin" : "Kết quả tìm kiếm thuốc"}
             />
+            )}
             </main>
 
             {/* Cart Component */}
@@ -331,6 +274,7 @@ function App() {
             </footer>
           </div>
         </CartProvider>
+        </TransactionProvider>
       </Web3Provider>
     </AuthProvider>
   );

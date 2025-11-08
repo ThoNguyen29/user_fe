@@ -26,13 +26,6 @@ const ProductCard = ({ product }) => {
             </svg>
           </div>
         </div>
-        
-        {/* Wishlist removed */}
-        
-        {/* Demo Badge */}
-        <div className="absolute top-3 left-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-          Demo
-        </div>
       </div>
 
       {/* Product Info */}
@@ -45,24 +38,7 @@ const ProductCard = ({ product }) => {
           {product.description}
         </p>
 
-        {/* Rating */}
-        <div className="flex items-center space-x-1 mb-3">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <FiStar
-                key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(product.rating)
-                    ? 'text-yellow-400 fill-current'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-gray-600 ml-1">
-            {product.rating}
-          </span>
-        </div>
+        
 
         {/* Price and Add to Cart */}
         <div className="flex items-center justify-between">

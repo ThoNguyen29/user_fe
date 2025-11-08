@@ -3,7 +3,7 @@ import React from 'react';
 
 const Banner = () => {
   return (
-    <section className="relative bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white py-20 overflow-hidden">
+  <section className="relative bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white py-20 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-full h-full bg-[url(data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E)]"></div>
@@ -22,7 +22,7 @@ const Banner = () => {
             Your trusted partner in healthcare and wellness. Discover premium quality pharmaceutical products and supplements.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in">
             <button 
               onClick={() => alert('Shop Now feature (Frontend-Only Demo)')}
               className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"

@@ -1,3 +1,6 @@
+
+
+
 export async function fetchEthRate() {
   // Returns USD per 1 ETH
   const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH');
