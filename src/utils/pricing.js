@@ -21,7 +21,10 @@ export function getReceiverAddress() {
 }
 
 export function getBackendUrl() {
-  return import.meta?.env?.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+  const env = import.meta?.env?.VITE_BACKEND_URL;
+  if (env) return env;
+  // Derive from current origin to work on LAN/IP where 127.0.0.1 would fail
+  return 'http://127.0.0.1:8000';
 }
 
 

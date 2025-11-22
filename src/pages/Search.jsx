@@ -262,26 +262,16 @@ function Search() {
     [performSearch]
   );
 
-  // Update URL when search query changes
-  useEffect(() => {
-    if (searchQuery !== queryParam) {
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) {
-        params.set('q', searchQuery);
-      }
-      setSearchParams(params, { replace: true });
-    }
-  }, [searchQuery, queryParam, setSearchParams]);
-
-  // Perform search when query changes
+  // Perform search when URL query parameter changes
   useEffect(() => {
     if (queryParam) {
       setSearchQuery(queryParam);
-      debouncedSearch(queryParam);
+      performSearch(queryParam);
     } else {
+      setSearchQuery('');
       setRawResults([]);
     }
-  }, [queryParam, debouncedSearch]);
+  }, [queryParam, performSearch]);
 
   // Sort and filter results
   useEffect(() => {

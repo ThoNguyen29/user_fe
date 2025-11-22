@@ -77,10 +77,20 @@ export const AuthProvider = ({ children }) => {
       const res = await fetch(`${getBackendUrl()}/api/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Failed to fetch user');
+      if (res.status === 401) {
+        // Token expired or invalid
+        saveToken('');
+        setUser(null);
+        return;
+      }
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
       const data = await res.json();
       setUser(data);
     } catch (e) {
+      console.log('Error fetching user:', e);
       setUser(null);
     }
   };

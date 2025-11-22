@@ -17,16 +17,17 @@ const Navbar = () => {
   const location = useLocation();
   const getOnSearch = () => (typeof window !== 'undefined' ? window.__APP_ON_SEARCH__ : null);
 
-  // Sync search query with URL when on search page
+  // Sync search query with URL when on search page (only when location changes, not when localQuery changes)
   useEffect(() => {
     if (location.pathname === '/search') {
       const params = new URLSearchParams(location.search);
       const q = params.get('q') || '';
-      if (q !== localQuery) {
-        setLocalQuery(q);
-      }
+      setLocalQuery(q);
+    } else {
+      // Clear search bar if not on search page
+      setLocalQuery('');
     }
-  }, [location, localQuery]);
+  }, [location.pathname, location.search]); // Remove localQuery from dependencies
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -78,10 +79,13 @@ const Navbar = () => {
                     if (fn) fn(v);
                   }
                 }}
-                onFocus={() => {
-                  // If clicking on search and not on search page, navigate to search page
-                  if (location.pathname !== '/search' && localQuery.trim()) {
-                    navigate(`/search?q=${encodeURIComponent(localQuery.trim())}`);
+                onKeyDown={(e) => {
+                  // Navigate to search page on Enter key
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (localQuery.trim()) {
+                      navigate(`/search?q=${encodeURIComponent(localQuery.trim())}`);
+                    }
                   }
                 }}
                 className="w-full pl-12 pr-4 py-3 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm placeholder-gray-500 hover:bg-white/80 transition-all duration-200"
